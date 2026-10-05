@@ -11,3 +11,12 @@ def main() -> int:
 
 
 raise SystemExit(main())
+
+
+def read_lines(path):
+    with open(path, "rb") as f:          # "rb" = raw bytes. Text mode breaks \r\n tests
+        data = f.read()
+    lines = data.split(b"\n")
+    if lines[-1] == b"":                 # a final newline makes no extra line
+        lines.pop()
+    return lines
