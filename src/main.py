@@ -20,3 +20,29 @@ def read_lines(path):
     if lines[-1] == b"":                 # a final newline makes no extra line
         lines.pop()
     return lines
+
+
+def myers(a, b):
+    """Return the edit script from a to b as a list of ' ', '-', '+'."""
+    n = len(a)
+    m = len(b)
+    max_d = n + m
+    offset = max_d + 1                   # V[k] is stored at v[k + offset] (k can be negative)
+    v = [0] * (2 * max_d + 3)
+    trace = []                           # trace[d] = V after round d, for k in -d..d
+
+    for d in range(max_d + 1):
+        for k in range(-d, d + 1, 2):
+            if k == -d or (k != d and v[k - 1 + offset] < v[k + 1 + offset]):
+                x = v[k + 1 + offset]            # down (insert): x stays the same
+            else:
+                x = v[k - 1 + offset] + 1        # right (delete): x goes up by one
+            y = x - k
+            while x < n and y < m and a[x] == b[y]:   # the snake
+                x += 1
+                y += 1
+            v[k + offset] = x
+            if x >= n and y >= m:
+                trace.append(v[offset - d: offset + d + 1])
+                return backtrack(trace, n, m)
+        trace.append(v[offset - d: offset + d + 1])
