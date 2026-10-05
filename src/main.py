@@ -194,3 +194,42 @@ def diff_middle(a, b):
     ops += ["-"] * (len(a) - i)
     ops += ["+"] * (len(b) - j)
     return ops
+
+
+def to_ranges(positions):
+    """[3, 4, 5, 9] -> '3-6,9-10'.  Empty -> '.'"""
+    if not positions:
+        return "."
+    parts = []
+    start = positions[0]
+    end = start + 1
+    for p in positions[1:]:
+        if p == end:                    # touches the current range: extend it
+            end += 1
+        else:
+            parts.append(f"{start}-{end}")
+            start = p
+            end = p + 1
+    parts.append(f"{start}-{end}")
+    return ",".join(parts)
+
+
+def highlight_line(old, new):
+    old = old.decode("utf-8")
+    new = new.decode("utf-8")
+    ops = diff(old, new)
+    old_pos = []
+    new_pos = []
+    i = 0
+    j = 0
+    for op in ops:
+        if op == " ":
+            i += 1
+            j += 1
+        elif op == "-":
+            old_pos.append(i)           # this character of the old line was removed
+            i += 1
+        else:
+            new_pos.append(j)           # this character of the new line was added
+            j += 1
+    return f"? {to_ranges(old_pos)} | {to_ranges(new_pos)}\n".encode()
