@@ -77,3 +77,23 @@ def backtrack(trace, n, m):
         y -= 1
     ops.reverse()                                # built backwards, so flip once at the end
     return ops
+
+
+def delete_first(ops):
+    result = []
+    dels = []
+    ins = []
+    for op in ops:
+        if op == "-":
+            dels.append(op)
+        elif op == "+":
+            ins.append(op)
+        else:
+            result += dels
+            result += ins
+            dels = []
+            ins = []
+            result.append(op)
+    result += dels
+    result += ins
+    return result
