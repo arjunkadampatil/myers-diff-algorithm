@@ -146,3 +146,51 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def diff(a, b):
+    n = len(a)
+    m = len(b)
+    start = 0
+    while start < n and start < m and a[start] == b[start]:
+        start += 1
+    end_a = n
+    end_b = m
+    while end_a > start and end_b > start and a[end_a - 1] == b[end_b - 1]:
+        end_a -= 1
+        end_b -= 1
+    middle = diff_middle(a[start:end_a], b[start:end_b])
+    return [" "] * start + middle + [" "] * (n - end_a)
+
+
+def diff_middle(a, b):
+    in_a = set(a)
+    in_b = set(b)
+    keep_a = [i for i in range(len(a)) if a[i] in in_b]    # positions that could match
+    keep_b = [j for j in range(len(b)) if b[j] in in_a]
+    small_ops = myers([a[i] for i in keep_a], [b[j] for j in keep_b])
+
+    ops = []
+    i = 0          # next line of a
+    j = 0          # next line of b
+    p = 0          # next line of the small a
+    q = 0          # next line of the small b
+    for op in small_ops:
+        if op == " " or op == "-":
+            while i < keep_a[p]:       # lines of a we set aside become deletes
+                ops.append("-")
+                i += 1
+        if op == " " or op == "+":
+            while j < keep_b[q]:       # lines of b we set aside become inserts
+                ops.append("+")
+                j += 1
+        ops.append(op)
+        if op != "+":
+            i += 1
+            p += 1
+        if op != "-":
+            j += 1
+            q += 1
+    ops += ["-"] * (len(a) - i)
+    ops += ["+"] * (len(b) - j)
+    return ops
