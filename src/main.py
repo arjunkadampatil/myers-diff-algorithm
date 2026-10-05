@@ -22,7 +22,7 @@ def read_lines(path):
     return lines
 
 
-def myers(a, b):
+def diff(a, b):
     """Return the edit script from a to b as a list of ' ', '-', '+'."""
     n = len(a)
     m = len(b)
