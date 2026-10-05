@@ -97,3 +97,52 @@ def delete_first(ops):
     result += dels
     result += ins
     return result
+
+
+def render(a, b, ops, with_highlight):
+    out = []
+    i = 0
+    j = 0
+    pos = 0
+    while pos < len(ops):
+        if ops[pos] == " ":
+            out.append(b" " + a[i] + b"\n")
+            i += 1
+            j += 1
+            pos += 1
+            continue
+        dels = []                       # a change block: some '-' then some '+'
+        ins = []
+        while pos < len(ops) and ops[pos] == "-":
+            dels.append(a[i])
+            i += 1
+            pos += 1
+        while pos < len(ops) and ops[pos] == "+":
+            ins.append(b[j])
+            j += 1
+            pos += 1
+        for line in dels:
+            out.append(b"-" + line + b"\n")
+        for t, line in enumerate(ins):
+            out.append(b"+" + line + b"\n")
+            if with_highlight and t < len(dels):
+                out.append(highlight_line(dels[t], line))   # Part B, Step 7
+    return b"".join(out)
+
+
+def main():
+    if len(sys.argv) != 4 or sys.argv[1] not in ("lines", "highlight"):
+        print("usage: main.py lines|highlight A B", file=sys.stderr)
+        sys.exit(2)
+    try:
+        a = read_lines(sys.argv[2])
+        b = read_lines(sys.argv[3])
+    except OSError as e:                       # can't read a file: nothing on stdout, exit code 2
+        print(f"error: {e}", file=sys.stderr)
+        sys.exit(2)
+    ops = delete_first(diff(a, b))
+    sys.stdout.buffer.write(render(a, b, ops, sys.argv[1] == "highlight"))
+
+
+if __name__ == "__main__":
+    main()
