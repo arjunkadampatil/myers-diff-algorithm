@@ -46,3 +46,34 @@ def myers(a, b):
                 trace.append(v[offset - d: offset + d + 1])
                 return backtrack(trace, n, m)
         trace.append(v[offset - d: offset + d + 1])
+
+
+def backtrack(trace, n, m):
+    ops = []
+    x = n
+    y = m
+    for d in range(len(trace) - 1, 0, -1):
+        prev = trace[d - 1]                      # V from round d-1; k is stored at index k + (d-1)
+        k = x - y
+        if k == -d or (k != d and prev[k - 1 + d - 1] < prev[k + 1 + d - 1]):
+            prev_k = k + 1
+        else:
+            prev_k = k - 1
+        prev_x = prev[prev_k + d - 1]
+        prev_y = prev_x - prev_k
+        while x > prev_x and y > prev_y:         # walk back along the snake
+            ops.append(" ")
+            x -= 1
+            y -= 1
+        if x == prev_x:
+            ops.append("+")                      # x didn't change, so we came down: insert
+        else:
+            ops.append("-")                      # we came right: delete
+        x = prev_x
+        y = prev_y
+    while x > 0:                                 # the snake at d = 0
+        ops.append(" ")
+        x -= 1
+        y -= 1
+    ops.reverse()                                # built backwards, so flip once at the end
+    return ops
