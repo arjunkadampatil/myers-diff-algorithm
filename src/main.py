@@ -1,17 +1,7 @@
 import sys
 
 
-def main() -> int:
-    if len(sys.argv) != 4 or sys.argv[1] not in ("lines", "highlight"):
-        print("usage: main.py lines|highlight A_PATH B_PATH", file=sys.stderr)
-        return 2
-    command, a_path, b_path = sys.argv[1:]
-    # TODO: read both files as raw bytes (brief, Section 2), then print the listing.
-    return 0
-
-
-raise SystemExit(main())
-
+# ---------- Step 1: reading a file into lines ----------
 
 def read_lines(path):
     with open(path, "rb") as f:          # "rb" = raw bytes. Text mode breaks \r\n tests
@@ -22,7 +12,9 @@ def read_lines(path):
     return lines
 
 
-def diff(a, b):
+# ---------- Step 2: Myers' algorithm (forward pass) ----------
+
+def myers(a, b):
     """Return the edit script from a to b as a list of ' ', '-', '+'."""
     n = len(a)
     m = len(b)
@@ -47,6 +39,8 @@ def diff(a, b):
                 return backtrack(trace, n, m)
         trace.append(v[offset - d: offset + d + 1])
 
+
+# ---------- Step 3: backtracking ----------
 
 def backtrack(trace, n, m):
     ops = []
@@ -79,6 +73,8 @@ def backtrack(trace, n, m):
     return ops
 
 
+# ---------- Step 4: the delete-first rule ----------
+
 def delete_first(ops):
     result = []
     dels = []
@@ -99,54 +95,7 @@ def delete_first(ops):
     return result
 
 
-def render(a, b, ops, with_highlight):
-    out = []
-    i = 0
-    j = 0
-    pos = 0
-    while pos < len(ops):
-        if ops[pos] == " ":
-            out.append(b" " + a[i] + b"\n")
-            i += 1
-            j += 1
-            pos += 1
-            continue
-        dels = []                       # a change block: some '-' then some '+'
-        ins = []
-        while pos < len(ops) and ops[pos] == "-":
-            dels.append(a[i])
-            i += 1
-            pos += 1
-        while pos < len(ops) and ops[pos] == "+":
-            ins.append(b[j])
-            j += 1
-            pos += 1
-        for line in dels:
-            out.append(b"-" + line + b"\n")
-        for t, line in enumerate(ins):
-            out.append(b"+" + line + b"\n")
-            if with_highlight and t < len(dels):
-                out.append(highlight_line(dels[t], line))   # Part B, Step 7
-    return b"".join(out)
-
-
-def main():
-    if len(sys.argv) != 4 or sys.argv[1] not in ("lines", "highlight"):
-        print("usage: main.py lines|highlight A B", file=sys.stderr)
-        sys.exit(2)
-    try:
-        a = read_lines(sys.argv[2])
-        b = read_lines(sys.argv[3])
-    except OSError as e:                       # can't read a file: nothing on stdout, exit code 2
-        print(f"error: {e}", file=sys.stderr)
-        sys.exit(2)
-    ops = delete_first(diff(a, b))
-    sys.stdout.buffer.write(render(a, b, ops, sys.argv[1] == "highlight"))
-
-
-if __name__ == "__main__":
-    main()
-
+# ---------- Step 6: speed-ups (trim common start/end, set aside unique lines) ----------
 
 def diff(a, b):
     n = len(a)
@@ -196,6 +145,8 @@ def diff_middle(a, b):
     return ops
 
 
+# ---------- Step 7: Part B helpers ----------
+
 def to_ranges(positions):
     """[3, 4, 5, 9] -> '3-6,9-10'.  Empty -> '.'"""
     if not positions:
@@ -233,3 +184,54 @@ def highlight_line(old, new):
             new_pos.append(j)           # this character of the new line was added
             j += 1
     return f"? {to_ranges(old_pos)} | {to_ranges(new_pos)}\n".encode()
+
+
+# ---------- Step 5: printing ----------
+
+def render(a, b, ops, with_highlight):
+    out = []
+    i = 0
+    j = 0
+    pos = 0
+    while pos < len(ops):
+        if ops[pos] == " ":
+            out.append(b" " + a[i] + b"\n")
+            i += 1
+            j += 1
+            pos += 1
+            continue
+        dels = []                       # a change block: some '-' then some '+'
+        ins = []
+        while pos < len(ops) and ops[pos] == "-":
+            dels.append(a[i])
+            i += 1
+            pos += 1
+        while pos < len(ops) and ops[pos] == "+":
+            ins.append(b[j])
+            j += 1
+            pos += 1
+        for line in dels:
+            out.append(b"-" + line + b"\n")
+        for t, line in enumerate(ins):
+            out.append(b"+" + line + b"\n")
+            if with_highlight and t < len(dels):
+                out.append(highlight_line(dels[t], line))
+    return b"".join(out)
+
+
+def main():
+    if len(sys.argv) != 4 or sys.argv[1] not in ("lines", "highlight"):
+        print("usage: main.py lines|highlight A B", file=sys.stderr)
+        sys.exit(2)
+    try:
+        a = read_lines(sys.argv[2])
+        b = read_lines(sys.argv[3])
+    except OSError as e:                       # can't read a file: nothing on stdout, exit code 2
+        print(f"error: {e}", file=sys.stderr)
+        sys.exit(2)
+    ops = delete_first(diff(a, b))
+    sys.stdout.buffer.write(render(a, b, ops, sys.argv[1] == "highlight"))
+
+
+if __name__ == "__main__":
+    main()
